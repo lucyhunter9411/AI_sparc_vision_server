@@ -60,7 +60,7 @@ def get_hand_raisers(handup_result, face_recognition_result, threshold=0.2):
     return results
 
 @app.post("/upload/")
-async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...)):
+async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...), local_time_vision: int = Form(...)):
     try:
         file_bytes = await file.read()
         # Encode the image bytes to a Base64 string
@@ -84,12 +84,6 @@ async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...))
             detect_user = get_hand_raisers(handup_result_box, face_recognition_result_box)
             logger.info(f"\n----------------\n!!! detect_user: {detect_user}\n----------------")
 
-            
-            local_time_vision = datetime.now().isoformat()
-            dt_vision = datetime.fromisoformat(local_time_vision)
-            formatted_time_vision = dt_vision.strftime("%H")
-            hour = int(formatted_time_vision)  # Convert to integer
-
             # Prepare data to send to the new endpoint
             data_to_send = {
                 "handup_result": handup_result_box if isinstance(handup_result_box, list) else [],
@@ -98,7 +92,7 @@ async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...))
                 "image_name": file.filename,
                 "image": image_base64,
                 "detect_user": detect_user if isinstance(detect_user, list) else [],
-                "local_time_vision": hour,
+                "local_time_vision": local_time_vision,
             }
 
             # Send data to the new endpoint with error handling

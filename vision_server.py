@@ -6,6 +6,7 @@ import uvicorn
 import logging
 import os
 import base64
+from datetime import datetime
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -83,6 +84,12 @@ async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...))
             detect_user = get_hand_raisers(handup_result_box, face_recognition_result_box)
             logger.info(f"\n----------------\n!!! detect_user: {detect_user}\n----------------")
 
+            
+            local_time_vision = datetime.now().isoformat()
+            dt_vision = datetime.fromisoformat(local_time_vision)
+            formatted_time_vision = dt_vision.strftime("%H")
+            hour = int(formatted_time_vision)  # Convert to integer
+
             # Prepare data to send to the new endpoint
             data_to_send = {
                 "handup_result": handup_result_box if isinstance(handup_result_box, list) else [],
@@ -91,13 +98,13 @@ async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...))
                 "image_name": file.filename,
                 "image": image_base64,
                 "detect_user": detect_user if isinstance(detect_user, list) else [],
+                "local_time_vision": hour,
             }
-            # logger.info(f"\n----------------\n✅ Data to send: {data_to_send}\n----------------")
 
             # Send data to the new endpoint with error handling
             try:
-                await client.post("https://app-ragbackend-dev-wus-001.azurewebsites.net/vision/getData/", json=data_to_send)
-                # await client.post("http://localhost:8000/vision/getData/", json=data_to_send)
+                # await client.post("https://app-ragbackend-dev-wus-001.azurewebsites.net/vision/getData/", json=data_to_send)
+                await client.post("http://localhost:8000/vision/getData/", json=data_to_send)
                 logger.info("\n----------------\n✅ Send data to RAG_backend successfully!\n----------------")
             except httpx.HTTPStatusError as e:
                 logger.error(f"\n----------------\n❌ Failed to send data: {str(e)}\n----------------")
@@ -119,5 +126,5 @@ async def receive_image(file: UploadFile = File(...), robot_id: str = Form(...))
 
 if __name__ == "__main__":
     # For local development only
-    port = int(os.getenv("PORT", 8000))  # Default to 8000 for Azure compatibility
+    port = int(os.getenv("PORT", 7000))  # Default to 8000 for Azure compatibility
     uvicorn.run("vision_server:app", host="0.0.0.0", port=port, reload=True)
